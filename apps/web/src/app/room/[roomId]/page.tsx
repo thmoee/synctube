@@ -1,44 +1,22 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft, Send, Users } from 'lucide-react';
-
+import { ArrowLeft, Users, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useSocket } from '@/hooks/useSocket';
+import Link from 'next/link';
+import { useState } from 'react';
+
+interface Message {
+  id: number;
+  user: string;
+  content: string;
+  time: string;
+}
 
 export default function RoomPage() {
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      user: 'Alex',
-      content: 'Hey everyone! Ready to watch?',
-      time: '2:30 PM',
-    },
-    {
-      id: 2,
-      user: 'Taylor',
-      content: "I'm here! This movie looks great.",
-      time: '2:31 PM',
-    },
-    {
-      id: 3,
-      user: 'Jordan',
-      content: 'Can we start in 5 minutes? Getting snacks.',
-      time: '2:32 PM',
-    },
-    {
-      id: 4,
-      user: 'Alex',
-      content: "Sure, no rush. We'll wait for you.",
-      time: '2:33 PM',
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
-
-  useSocket();
 
   const handleSendMessage = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -58,7 +36,6 @@ export default function RoomPage() {
       setInputValue('');
     }
   };
-
   return (
     <div className="flex flex-col min-h-screen">
       <header className="fixed top-0 left-0 right-0 z-10 px-4 lg:px-6 h-16 flex items-center border-b bg-background">

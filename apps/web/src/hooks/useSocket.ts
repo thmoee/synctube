@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 
 export function useSocket() {
   const [isConnected, setIsConnected] = useState(false);
@@ -6,6 +6,7 @@ export function useSocket() {
 
   useEffect(() => {
     const initSocket = () => {
+      // TODO: change to a process.env variable
       const socket = new WebSocket('ws://localhost:8080');
 
       socket.onopen = () => {
@@ -35,8 +36,31 @@ export function useSocket() {
     };
   }, []);
 
+  const createRoom = useCallback(
+    (roomData: { roomName: string; hostName: string; videoUrl: string }) => {
+      return new Promise<string>((resolve) => {
+        if (socketRef.current && isConnected) {
+          const message = JSON.stringify({ type: 'create-room', ...roomData });
+          socketRef.current.send(message);
+
+          const handleMessage = (event: MessageEvent) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'room-created') {
+              resolve(data.roomId);
+              socketRef.current?.removeEventListener('message', handleMessage);
+            }
+          };
+
+          socketRef.current.addEventListener('message', handleMessage);
+        }
+      });
+    },
+    [isConnected]
+  );
+
   return {
     socket: socketRef.current,
     isConnected,
+    createRoom,
   };
 }
