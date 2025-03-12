@@ -7,6 +7,7 @@ import { ArrowLeft, Send, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useSocket } from '@/hooks/useSocket';
 
 export default function RoomPage() {
   const [messages, setMessages] = useState([
@@ -36,6 +37,8 @@ export default function RoomPage() {
     },
   ]);
   const [inputValue, setInputValue] = useState('');
+
+  useSocket();
 
   const handleSendMessage = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
