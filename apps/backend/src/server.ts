@@ -26,6 +26,10 @@ wss.on('connection', (ws: WebSocket) => {
         const roomId = generateRoomId();
         rooms.set(roomId, { clients: new Set([ws]), messages: [] });
         ws.send(JSON.stringify({ type: 'room-created', roomId }));
+        console.log('Room created:', roomId);
+        rooms.forEach((room) => {
+          console.log('room: ', room);
+        });
         break;
 
       case 'join-room':

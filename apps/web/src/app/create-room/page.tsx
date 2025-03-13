@@ -30,6 +30,7 @@ export default function CreateRoomPage() {
   return (
     <div>
       <h1>Create Room</h1>
+      <p>Status: {isConnected ? 'Connected' : 'Disconnected'}</p>
       <form onSubmit={handleCreateRoom}>
         <Button type="submit">room creation</Button>
       </form>
