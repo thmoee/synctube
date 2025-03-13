@@ -1,57 +1,78 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft, Send, Users } from 'lucide-react';
-
+import { ArrowLeft, Users, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
+import { Message } from '@/types/message';
+import { useSocket } from '@/hooks/useSocket';
+import { useParams } from 'next/navigation';
 
 export default function RoomPage() {
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      user: 'Alex',
-      content: 'Hey everyone! Ready to watch?',
-      time: '2:30 PM',
-    },
-    {
-      id: 2,
-      user: 'Taylor',
-      content: "I'm here! This movie looks great.",
-      time: '2:31 PM',
-    },
-    {
-      id: 3,
-      user: 'Jordan',
-      content: 'Can we start in 5 minutes? Getting snacks.',
-      time: '2:32 PM',
-    },
-    {
-      id: 4,
-      user: 'Alex',
-      content: "Sure, no rush. We'll wait for you.",
-      time: '2:33 PM',
-    },
-  ]);
+  const params = useParams();
+  const roomId = params.roomId as string;
+  const {
+    isConnected,
+    joinRoom,
+    sendMessage,
+    subscribeToMessages,
+    subscribeToParticipants,
+  } = useSocket();
+
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [participants, setParticipants] = useState(0);
   const [inputValue, setInputValue] = useState('');
+  const [username] = useState(`User-${Math.floor(Math.random() * 1000)}`);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isConnected || !roomId) return;
+
+    const fetchRoomData = async () => {
+      try {
+        const roomMessages = await joinRoom(roomId);
+        if (Array.isArray(roomMessages)) {
+          setMessages(roomMessages);
+        }
+      } catch (error) {
+        console.error('Error joining room:', error);
+      }
+    };
+
+    fetchRoomData();
+  }, [isConnected, joinRoom, roomId]);
+
+  useEffect(() => {
+    if (!isConnected) return;
+
+    const unsubscribe = subscribeToMessages((message) => {
+      setMessages((prev) => [...prev, message as Message]);
+    });
+
+    return unsubscribe;
+  }, [isConnected, subscribeToMessages]);
+
+  // Subscribe to participant count updates
+  useEffect(() => {
+    if (!isConnected) return;
+
+    const unsubscribe = subscribeToParticipants((count) => {
+      setParticipants(count);
+    });
+
+    return unsubscribe;
+  }, [isConnected, subscribeToParticipants]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const handleSendMessage = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (inputValue.trim()) {
-      setMessages([
-        ...messages,
-        {
-          id: messages.length + 1,
-          user: 'You',
-          content: inputValue,
-          time: new Date().toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-          }),
-        },
-      ]);
+      sendMessage(roomId, username, inputValue);
       setInputValue('');
     }
   };
@@ -66,9 +87,16 @@ export default function RoomPage() {
         <div className="ml-auto flex items-center gap-4">
           <div className="flex items-center">
             <Users className="h-4 w-4 mr-1 text-red-400" />
-            <span className="text-sm text-red-400">1337</span>
+            <span className="text-sm text-red-400">{participants}</span>
           </div>
-          <Button size="sm" variant="outline">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              navigator.clipboard.writeText(window.location.href);
+              alert('Room link copied to clipboard!');
+            }}
+          >
             Invite
           </Button>
         </div>
@@ -136,6 +164,7 @@ export default function RoomPage() {
               </Button>
             </form>
           </div>
+          <div ref={messagesEndRef} />
         </div>
         {/* Mobile chat view */}
         <div className="lg:hidden flex flex-col border-t">
