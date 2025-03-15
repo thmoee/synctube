@@ -17,7 +17,7 @@ const initializeSocket = () => {
   if (isConnecting) return null;
 
   isConnecting = true;
-  const socket = new WebSocket('ws://localhost:8080');
+  const socket = new WebSocket(process.env.NEXT_PUBLIC_WEBSOCKET_URL!);
 
   socket.onopen = () => {
     console.log('WebSocket connected');
