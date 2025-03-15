@@ -15,8 +15,15 @@ const wss = new WebSocketServer({ port: 8080 });
 
 const rooms: Map<string, Room> = new Map();
 
+let isShuttingDown = false;
+
 wss.on('connection', (ws: WebSocket) => {
   console.log('Client connected');
+
+  if (isShuttingDown) {
+    ws.close(1001, 'Server is shutting down');
+    return;
+  }
 
   ws.on('message', (message: string) => {
     const data = JSON.parse(message);
@@ -97,5 +104,57 @@ function broadcast(clients: Set<WebSocket>, message: any) {
 function generateRoomId(): string {
   return Math.random().toString(36).substring(2, 10);
 }
+
+function gracefulShutdown(signal: string) {
+  console.log(`Received ${signal}. Starting graceful shutdown...`);
+
+  isShuttingDown = true;
+
+  const shutdownPromise = new Promise<void>((resolve) => {
+    let clientCount = 0;
+
+    rooms.forEach((room) => {
+      room.clients.forEach((client) => {
+        clientCount++;
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(
+            JSON.stringify({
+              type: 'server-shutdown',
+              message: 'Server is shutting down. Please reconnect later.',
+            })
+          );
+        }
+      });
+    });
+
+    console.log(`Notifying ${clientCount} clients about shutdown...`);
+
+    setTimeout(() => {
+      wss.close(() => {
+        console.log('WebSocket server closed.');
+        resolve();
+      });
+    }, 1000);
+  });
+
+  shutdownPromise
+    .then(() => {
+      console.log('Graceful shutdown completed.');
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error('Error during shutdown:', err);
+      process.exit(1);
+    });
+
+  setTimeout(() => {
+    console.error('Graceful shutdown timed out. Forcing exit.');
+    process.exit(1);
+  }, 10000);
+}
+
+// Register signal handlers
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 console.log('WebSocket server is running on ws://localhost:8080');
