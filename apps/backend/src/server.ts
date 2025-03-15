@@ -6,6 +6,7 @@ interface Room {
 }
 
 interface Message {
+  id: number;
   user: string;
   content: string;
   time: string;
@@ -59,6 +60,7 @@ wss.on('connection', (ws: WebSocket) => {
         const targetRoom = rooms.get(data.roomId);
         if (targetRoom) {
           const newMessage: Message = {
+            id: Math.floor(Math.random() * 1000000),
             user: data.user,
             content: data.content,
             time: new Date().toISOString(),
