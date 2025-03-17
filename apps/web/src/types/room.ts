@@ -10,3 +10,8 @@ export interface RoomData {
   messages: Message[];
   videoUrl?: string;
 }
+
+export interface VideoMetadata {
+  title: string;
+  creator: string;
+}

@@ -6,7 +6,7 @@ import { useSocket } from '@/hooks/useSocket';
 import { useParams } from 'next/navigation';
 import RoomHeader from '@/components/room/header';
 import RoomChat from '@/components/room/chat';
-import { RoomData } from '@/types/room';
+import { RoomData, VideoMetadata } from '@/types/room';
 
 interface YouTubePlayer {
   playVideo: () => void;
@@ -46,6 +46,10 @@ export default function RoomPage() {
   const [participants, setParticipants] = useState(0);
   const [videoUrl, setVideoUrl] = useState('');
   const [username] = useState(`User-${Math.floor(Math.random() * 1000)}`);
+  const [videoMetadata, setVideoMetadata] = useState<VideoMetadata>({
+    title: '',
+    creator: '',
+  });
 
   const playerRef = useRef<YouTubePlayer | null>(null);
   const playerInitializedRef = useRef(false);
@@ -158,6 +162,22 @@ export default function RoomPage() {
           videoUrl.split('/').pop()?.split('?')[0] ||
           '';
 
+        fetch(`/api/youtube?videoId=${videoId}`)
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.error) {
+              console.error('Error: ', data.error);
+              return;
+            }
+            setVideoMetadata({
+              title: data.title,
+              creator: data.creator,
+            });
+          })
+          .catch((error) => {
+            console.error('Error fetching video metadata:', error);
+          });
+
         new window.YT.Player('youtube-player', {
           height: '100%',
           width: '100%',
@@ -240,14 +260,17 @@ export default function RoomPage() {
               </div>
             )}
           </div>
-          <div className="p-4 border-t lg:border-r">
-            <h1 className="text-2xl font-bold">Title of Movie</h1>
-            <div className="flex items-center gap-2 mt-2">
-              <p className="text-sm text-gray-500">Name of Creator</p>
-              <span className="text-sm text-gray-500">•</span>
-              <p className="text-sm text-gray-500">Started 10 minutes ago</p>
+
+          {videoUrl && (
+            <div className="p-4 border-t lg:border-r">
+              <h1 className="text-2xl font-bold">{videoMetadata.title}</h1>
+              <div className="flex items-center gap-2 mt-2">
+                <p className="text-sm text-gray-500">{videoMetadata.creator}</p>
+                <span className="text-sm text-gray-500">•</span>
+                <p className="text-sm text-gray-500">Started 10 minutes ago</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
         <RoomChat messages={messages} roomId={roomId} />
       </main>
