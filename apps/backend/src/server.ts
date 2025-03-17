@@ -3,6 +3,7 @@ import WebSocket, { WebSocketServer } from 'ws';
 interface Room {
   clients: Set<WebSocket>;
   messages: Message[];
+  videoUrl?: string;
 }
 
 interface Message {
@@ -10,6 +11,21 @@ interface Message {
   user: string;
   content: string;
   time: string;
+}
+type SocketTypes =
+  | 'create-room'
+  | 'join-room'
+  | 'send-message'
+  | 'set-video'
+  | 'video-sync';
+
+interface WebSocketData {
+  type: SocketTypes;
+  roomId?: string;
+  user?: string;
+  content?: string;
+  videoUrl?: string;
+  event?: string;
 }
 
 const wss = new WebSocketServer({ port: 8080 });
@@ -27,7 +43,7 @@ wss.on('connection', (ws: WebSocket) => {
   }
 
   ws.on('message', (message: string) => {
-    const data = JSON.parse(message);
+    const data: WebSocketData = JSON.parse(message);
 
     switch (data.type) {
       case 'create-room':
@@ -41,11 +57,15 @@ wss.on('connection', (ws: WebSocket) => {
         break;
 
       case 'join-room':
-        const room = rooms.get(data.roomId);
+        const room = rooms.get(data.roomId!);
         if (room) {
           room.clients.add(ws);
           ws.send(
-            JSON.stringify({ type: 'room-data', messages: room.messages })
+            JSON.stringify({
+              type: 'room-data',
+              messages: room.messages,
+              videoUrl: room.videoUrl,
+            })
           );
           broadcast(room.clients, {
             type: 'participant-count',
@@ -57,18 +77,45 @@ wss.on('connection', (ws: WebSocket) => {
         break;
 
       case 'send-message':
-        const targetRoom = rooms.get(data.roomId);
+        const targetRoom = rooms.get(data.roomId!);
         if (targetRoom) {
           const newMessage: Message = {
             id: Math.floor(Math.random() * 1000000),
-            user: data.user,
-            content: data.content,
+            user: data.user!,
+            content: data.content!,
             time: new Date().toISOString(),
           };
           targetRoom.messages.push(newMessage);
           broadcast(targetRoom.clients, {
             type: 'new-message',
             message: newMessage,
+          });
+        }
+        break;
+
+      case 'set-video':
+        const videoRoom = rooms.get(data.roomId!);
+        if (videoRoom) {
+          videoRoom.videoUrl = data.videoUrl;
+          broadcast(videoRoom.clients, {
+            type: 'video-update',
+            videoUrl: data.videoUrl,
+          });
+        }
+        break;
+
+      case 'video-sync':
+        const syncRoom = rooms.get(data.roomId!);
+        if (syncRoom) {
+          syncRoom.clients.forEach((client) => {
+            if (client !== ws && client.readyState === WebSocket.OPEN) {
+              client.send(
+                JSON.stringify({
+                  type: 'video-sync',
+                  event: data.event,
+                })
+              );
+            }
           });
         }
         break;
