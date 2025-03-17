@@ -1,9 +1,15 @@
-import { CreateRoom } from '@/types/room';
+import { Message } from '@/types/message';
+import { CreateRoom, RoomData } from '@/types/room';
 import { useEffect, useState, useCallback } from 'react';
 
 let globalSocket: WebSocket | null = null;
 let isConnecting = false;
 let messageListeners: ((event: MessageEvent) => void)[] = [];
+
+type VideoEvent =
+  | { type: 'video-play'; timestamp: number }
+  | { type: 'video-pause'; timestamp: number }
+  | { type: 'video-seek'; timestamp: number };
 
 const initializeSocket = () => {
   if (
@@ -116,7 +122,7 @@ export function useSocket() {
     });
   }, []);
 
-  const joinRoom = useCallback((roomId: string) => {
+  const joinRoom = useCallback((roomId: string): Promise<RoomData> => {
     return new Promise((resolve, reject) => {
       const socket = globalSocket || initializeSocket();
 
@@ -132,7 +138,11 @@ export function useSocket() {
         const handleMessage = (event: MessageEvent) => {
           const data = JSON.parse(event.data);
           if (data.type === 'room-data') {
-            resolve(data.messages);
+            resolve({
+              messages: data.messages || [],
+              videoUrl: data.videoUrl,
+              createdAt: data.createdAt,
+            });
             messageListeners = messageListeners.filter(
               (listener) => listener !== handleMessage
             );
@@ -157,7 +167,11 @@ export function useSocket() {
         const handleMessage = (event: MessageEvent) => {
           const data = JSON.parse(event.data);
           if (data.type === 'room-data') {
-            resolve(data.messages);
+            resolve({
+              messages: data.messages || [],
+              videoUrl: data.videoUrl,
+              createdAt: data.createdAt,
+            });
             messageListeners = messageListeners.filter(
               (listener) => listener !== handleMessage
             );
@@ -190,12 +204,36 @@ export function useSocket() {
     []
   );
 
+  const setVideo = useCallback((roomId: string, videoUrl: string) => {
+    const socket = globalSocket;
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      const message = JSON.stringify({
+        type: 'set-video',
+        roomId,
+        videoUrl,
+      });
+      socket.send(message);
+    }
+  }, []);
+
+  const syncVideoState = useCallback((roomId: string, event: VideoEvent) => {
+    const socket = globalSocket;
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      const message = JSON.stringify({
+        type: 'video-sync',
+        roomId,
+        event,
+      });
+      socket.send(message);
+    }
+  }, []);
+
   const subscribeToMessages = useCallback(
-    (callback: (message: unknown) => void) => {
+    (callback: (message: Message) => void) => {
       const handleMessage = (event: MessageEvent) => {
         const data = JSON.parse(event.data);
         if (data.type === 'new-message') {
-          callback(data.message);
+          callback(data.message as Message);
         }
       };
 
@@ -230,6 +268,46 @@ export function useSocket() {
     []
   );
 
+  const subscribeToVideoUpdates = useCallback(
+    (callback: (videoUrl: string) => void) => {
+      const handleMessage = (event: MessageEvent) => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'video-update') {
+          callback(data.videoUrl);
+        }
+      };
+
+      messageListeners.push(handleMessage);
+
+      return () => {
+        messageListeners = messageListeners.filter(
+          (listener) => listener !== handleMessage
+        );
+      };
+    },
+    []
+  );
+
+  const subscribeToVideoSync = useCallback(
+    (callback: (event: VideoEvent) => void) => {
+      const handleMessage = (event: MessageEvent) => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'video-sync') {
+          callback(data.event);
+        }
+      };
+
+      messageListeners.push(handleMessage);
+
+      return () => {
+        messageListeners = messageListeners.filter(
+          (listener) => listener !== handleMessage
+        );
+      };
+    },
+    []
+  );
+
   return {
     isConnected,
     createRoom,
@@ -237,5 +315,9 @@ export function useSocket() {
     sendMessage,
     subscribeToMessages,
     subscribeToParticipants,
+    setVideo,
+    syncVideoState,
+    subscribeToVideoUpdates,
+    subscribeToVideoSync,
   };
 }
