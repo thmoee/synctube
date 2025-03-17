@@ -141,6 +141,7 @@ export function useSocket() {
             resolve({
               messages: data.messages || [],
               videoUrl: data.videoUrl,
+              createdAt: data.createdAt,
             });
             messageListeners = messageListeners.filter(
               (listener) => listener !== handleMessage
@@ -169,6 +170,7 @@ export function useSocket() {
             resolve({
               messages: data.messages || [],
               videoUrl: data.videoUrl,
+              createdAt: data.createdAt,
             });
             messageListeners = messageListeners.filter(
               (listener) => listener !== handleMessage

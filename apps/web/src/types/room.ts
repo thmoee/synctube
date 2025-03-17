@@ -9,6 +9,7 @@ export interface CreateRoom {
 export interface RoomData {
   messages: Message[];
   videoUrl?: string;
+  createdAt: string;
 }
 
 export interface VideoMetadata {

@@ -4,6 +4,7 @@ interface Room {
   clients: Set<WebSocket>;
   messages: Message[];
   videoUrl?: string;
+  createdAt: string;
 }
 
 interface Message {
@@ -48,12 +49,13 @@ wss.on('connection', (ws: WebSocket) => {
     switch (data.type) {
       case 'create-room':
         const roomId = generateRoomId();
-        rooms.set(roomId, { clients: new Set([ws]), messages: [] });
+        rooms.set(roomId, {
+          clients: new Set([ws]),
+          messages: [],
+          createdAt: new Date().toISOString(),
+        });
         ws.send(JSON.stringify({ type: 'room-created', roomId }));
         console.log('Room created:', roomId);
-        rooms.forEach((room) => {
-          console.log('room: ', room);
-        });
         break;
 
       case 'join-room':
@@ -65,6 +67,7 @@ wss.on('connection', (ws: WebSocket) => {
               type: 'room-data',
               messages: room.messages,
               videoUrl: room.videoUrl,
+              createdAt: room.createdAt,
             })
           );
           broadcast(room.clients, {

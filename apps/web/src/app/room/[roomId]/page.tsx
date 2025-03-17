@@ -7,7 +7,7 @@ import { useParams } from 'next/navigation';
 import RoomHeader from '@/components/room/header';
 import RoomChat from '@/components/room/chat';
 import { RoomData, VideoMetadata } from '@/types/room';
-
+import { formatDistanceToNow } from 'date-fns';
 interface YouTubePlayer {
   playVideo: () => void;
   pauseVideo: () => void;
@@ -50,6 +50,8 @@ export default function RoomPage() {
     title: '',
     creator: '',
   });
+  const [createdAt, setCreatedAt] = useState('');
+  const [elapsedTime, setElapsedTime] = useState('');
 
   const playerRef = useRef<YouTubePlayer | null>(null);
   const playerInitializedRef = useRef(false);
@@ -90,6 +92,9 @@ export default function RoomPage() {
           setMessages(roomData.messages || []);
           if (roomData.videoUrl) {
             setVideoUrl(roomData.videoUrl);
+          }
+          if (roomData.createdAt) {
+            setCreatedAt(roomData.createdAt);
           }
         }
       } catch (error) {
@@ -245,6 +250,24 @@ export default function RoomPage() {
     return unsubscribe;
   }, [isConnected, subscribeToVideoSync]);
 
+  useEffect(() => {
+    if (!createdAt) return;
+
+    const updateElapsedTime = () => {
+      setElapsedTime(
+        formatDistanceToNow(new Date(createdAt), { addSuffix: true })
+      );
+    };
+
+    // Update immediately
+    updateElapsedTime();
+
+    // Update every minute
+    const interval = setInterval(updateElapsedTime, 60000);
+
+    return () => clearInterval(interval);
+  }, [createdAt]);
+
   return (
     <div className="flex flex-col min-h-screen">
       <RoomHeader participants={participants} roomId={roomId} />
@@ -267,7 +290,7 @@ export default function RoomPage() {
               <div className="flex items-center gap-2 mt-2">
                 <p className="text-sm text-gray-500">{videoMetadata.creator}</p>
                 <span className="text-sm text-gray-500">•</span>
-                <p className="text-sm text-gray-500">Started 10 minutes ago</p>
+                <p className="text-sm text-gray-500">{elapsedTime}</p>
               </div>
             </div>
           )}
