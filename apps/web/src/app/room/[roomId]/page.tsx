@@ -259,10 +259,8 @@ export default function RoomPage() {
       );
     };
 
-    // Update immediately
     updateElapsedTime();
 
-    // Update every minute
     const interval = setInterval(updateElapsedTime, 60000);
 
     return () => clearInterval(interval);
@@ -290,7 +288,7 @@ export default function RoomPage() {
               <div className="flex items-center gap-2 mt-2">
                 <p className="text-sm text-gray-500">{videoMetadata.creator}</p>
                 <span className="text-sm text-gray-500">•</span>
-                <p className="text-sm text-gray-500">{elapsedTime}</p>
+                <p className="text-sm text-gray-500">Created {elapsedTime}</p>
               </div>
             </div>
           )}
