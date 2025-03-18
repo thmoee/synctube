@@ -22,7 +22,8 @@ type SocketTypes =
   | 'set-video'
   | 'video-sync'
   | 'add-to-playlist'
-  | 'next-video';
+  | 'next-video'
+  | 'video-ended';
 
 interface WebSocketData {
   type: SocketTypes;
@@ -169,6 +170,29 @@ wss.on('connection', (ws: WebSocket) => {
             videoUrl: nextVideoRoom.videoUrl,
             currentVideoIndex: nextVideoRoom.currentVideoIndex,
           });
+        }
+        break;
+
+      case 'video-ended':
+        const endedVideoRoom = rooms.get(data.roomId!);
+        if (endedVideoRoom) {
+          if (endedVideoRoom.playlist.length === 0) {
+            endedVideoRoom.videoUrl = undefined;
+            broadcast(endedVideoRoom.clients, {
+              type: 'video-update',
+              videoUrl: undefined,
+              currentVideoIndex: -1,
+            });
+          } else {
+            endedVideoRoom.currentVideoIndex++;
+            endedVideoRoom.videoUrl =
+              endedVideoRoom.playlist[endedVideoRoom.currentVideoIndex];
+            broadcast(endedVideoRoom.clients, {
+              type: 'video-update',
+              videoUrl: endedVideoRoom.videoUrl,
+              currentVideoIndex: endedVideoRoom.currentVideoIndex,
+            });
+          }
         }
         break;
 

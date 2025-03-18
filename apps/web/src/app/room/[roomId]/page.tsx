@@ -43,6 +43,7 @@ export default function RoomPage() {
     addToPlaylist,
     subscribeToPlaylistUpdates,
     nextVideo,
+    videoEnded,
   } = useSocket();
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -84,10 +85,11 @@ export default function RoomPage() {
           timestamp: currentTime,
         });
       } else if (playerState === 0) {
-        nextVideo(roomId);
+        videoEnded(roomId);
+        // nextVideo(roomId);
       }
     },
-    [roomId, syncVideoState, nextVideo]
+    [roomId, syncVideoState, videoEnded]
   );
 
   useEffect(() => {

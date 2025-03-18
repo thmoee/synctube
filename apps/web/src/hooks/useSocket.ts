@@ -363,6 +363,17 @@ export function useSocket() {
     }
   }, []);
 
+  const videoEnded = useCallback((roomId: string) => {
+    const socket = globalSocket;
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      const message = JSON.stringify({
+        type: 'video-ended',
+        roomId,
+      });
+      socket.send(message);
+    }
+  }, []);
+
   return {
     isConnected,
     createRoom,
@@ -377,5 +388,6 @@ export function useSocket() {
     addToPlaylist,
     subscribeToPlaylistUpdates,
     nextVideo,
+    videoEnded,
   };
 }
