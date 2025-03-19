@@ -184,13 +184,20 @@ wss.on('connection', (ws: WebSocket) => {
               currentVideoIndex: -1,
             });
           } else {
-            endedVideoRoom.currentVideoIndex++;
-            endedVideoRoom.videoUrl =
-              endedVideoRoom.playlist[endedVideoRoom.currentVideoIndex];
+            endedVideoRoom.videoUrl = endedVideoRoom.playlist[0];
+            endedVideoRoom.playlist.shift();
+            endedVideoRoom.currentVideoIndex = -1;
+
             broadcast(endedVideoRoom.clients, {
               type: 'video-update',
               videoUrl: endedVideoRoom.videoUrl,
-              currentVideoIndex: endedVideoRoom.currentVideoIndex,
+              currentVideoIndex: -1,
+            });
+
+            broadcast(endedVideoRoom.clients, {
+              type: 'playlist-update',
+              playlist: endedVideoRoom.playlist,
+              currentVideoIndex: -1,
             });
           }
         }
