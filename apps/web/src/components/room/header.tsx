@@ -23,7 +23,7 @@ export default function RoomHeader({
     }
 
     onAddVideo(videoUrl);
-    toast.success('Video added to playlist!');
+    toast.success('Video added to room!');
     setVideoUrl('');
   };
 
