@@ -40,6 +40,10 @@ export default function RoomPage() {
     subscribeToVideoUpdates,
     subscribeToVideoSync,
     syncVideoState,
+    addToPlaylist,
+    subscribeToPlaylistUpdates,
+    nextVideo,
+    videoEnded,
   } = useSocket();
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -52,6 +56,9 @@ export default function RoomPage() {
   });
   const [createdAt, setCreatedAt] = useState('');
   const [elapsedTime, setElapsedTime] = useState('');
+  const [playlist, setPlaylist] = useState<string[]>([]);
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+  const [isPlayingFromPlaylist, setIsPlayingFromPlaylist] = useState(false);
 
   const playerRef = useRef<YouTubePlayer | null>(null);
   const playerInitializedRef = useRef(false);
@@ -77,9 +84,12 @@ export default function RoomPage() {
           type: 'video-pause',
           timestamp: currentTime,
         });
+      } else if (playerState === 0) {
+        videoEnded(roomId);
+        // nextVideo(roomId);
       }
     },
-    [roomId, syncVideoState]
+    [roomId, syncVideoState, videoEnded]
   );
 
   useEffect(() => {
@@ -90,12 +100,10 @@ export default function RoomPage() {
         const roomData = (await joinRoom(roomId)) as RoomData;
         if (roomData) {
           setMessages(roomData.messages || []);
-          if (roomData.videoUrl) {
-            setVideoUrl(roomData.videoUrl);
-          }
-          if (roomData.createdAt) {
-            setCreatedAt(roomData.createdAt);
-          }
+          setVideoUrl(roomData.videoUrl || '');
+          setCreatedAt(roomData.createdAt);
+          setPlaylist(roomData.playlist || []);
+          setCurrentVideoIndex(roomData.currentVideoIndex);
         }
       } catch (error) {
         console.error('Error joining room:', error);
@@ -131,6 +139,7 @@ export default function RoomPage() {
       if (url && typeof url === 'string') {
         setVideoUrl(url);
         playerInitializedRef.current = false;
+        setIsPlayingFromPlaylist(false);
       }
     });
 
@@ -259,18 +268,30 @@ export default function RoomPage() {
       );
     };
 
-    // Update immediately
     updateElapsedTime();
 
-    // Update every minute
     const interval = setInterval(updateElapsedTime, 60000);
 
     return () => clearInterval(interval);
   }, [createdAt]);
 
+  useEffect(() => {
+    if (!isConnected) return;
+
+    const unsubscribe = subscribeToPlaylistUpdates((data) => {
+      setPlaylist(data.playlist);
+      setCurrentVideoIndex(data.currentVideoIndex);
+    });
+
+    return unsubscribe;
+  }, [isConnected, subscribeToPlaylistUpdates]);
+
   return (
     <div className="flex flex-col min-h-screen">
-      <RoomHeader participants={participants} roomId={roomId} />
+      <RoomHeader
+        participants={participants}
+        onAddVideo={(url) => addToPlaylist(roomId, url)}
+      />
       <main className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-0 relative mt-16">
         <div className="flex flex-col overflow-y-auto">
           <div
@@ -290,7 +311,31 @@ export default function RoomPage() {
               <div className="flex items-center gap-2 mt-2">
                 <p className="text-sm text-gray-500">{videoMetadata.creator}</p>
                 <span className="text-sm text-gray-500">•</span>
-                <p className="text-sm text-gray-500">{elapsedTime}</p>
+                <p className="text-sm text-gray-500">Created {elapsedTime}</p>
+              </div>
+            </div>
+          )}
+
+          {playlist.length > 0 && (
+            <div className="p-4 border-t">
+              <h2 className="font-semibold mb-4">
+                Playlist ({playlist.length} videos)
+              </h2>
+              <div className="space-y-2">
+                {playlist.map((videoUrl, index) => (
+                  <div
+                    key={videoUrl}
+                    className={`p-2 rounded ${
+                      index === currentVideoIndex && isPlayingFromPlaylist
+                        ? 'bg-accent'
+                        : 'hover:bg-accent/50'
+                    }`}
+                  >
+                    <p className="text-sm">
+                      {index + 1}. {videoUrl}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
           )}

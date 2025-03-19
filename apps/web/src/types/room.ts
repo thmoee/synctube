@@ -10,6 +10,8 @@ export interface RoomData {
   messages: Message[];
   videoUrl?: string;
   createdAt: string;
+  playlist: string[];
+  currentVideoIndex: number;
 }
 
 export interface VideoMetadata {

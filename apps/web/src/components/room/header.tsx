@@ -3,16 +3,17 @@ import { toast } from 'sonner';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import Link from 'next/link';
-import { useSocket } from '@/hooks/useSocket';
 import { useState } from 'react';
 
 interface RoomHeaderProps {
   participants: number;
-  roomId: string;
+  onAddVideo: (url: string) => void;
 }
 
-export default function RoomHeader({ participants, roomId }: RoomHeaderProps) {
-  const { setVideo } = useSocket();
+export default function RoomHeader({
+  participants,
+  onAddVideo,
+}: RoomHeaderProps) {
   const [videoUrl, setVideoUrl] = useState('');
 
   const handleSetVideo = () => {
@@ -21,29 +22,8 @@ export default function RoomHeader({ participants, roomId }: RoomHeaderProps) {
       return;
     }
 
-    let videoId = '';
-    try {
-      const url = new URL(videoUrl);
-      if (url.hostname.includes('youtube.com')) {
-        videoId = url.searchParams.get('v') || '';
-      } else if (url.hostname.includes('youtu.be')) {
-        videoId = url.pathname.substring(1);
-      }
-    } catch (error) {
-      // If not a valid URL, check if it's just a video ID
-      if (/^[a-zA-Z0-9_-]{11}$/.test(videoUrl)) {
-        videoId = videoUrl;
-      }
-    }
-
-    if (!videoId) {
-      toast.error('Invalid YouTube URL or video ID');
-      return;
-    }
-
-    const embedUrl = `https://www.youtube.com/embed/${videoId}?enablejsapi=1`;
-    setVideo(roomId, embedUrl);
-    toast.success('Video updated!');
+    onAddVideo(videoUrl);
+    toast.success('Video added to room!');
     setVideoUrl('');
   };
 
@@ -56,7 +36,7 @@ export default function RoomHeader({ participants, roomId }: RoomHeaderProps) {
       <div>
         <Input
           className="bg-muted/50 min-w-96"
-          placeholder="Enter Video Url here"
+          placeholder="Enter Video URL here"
           value={videoUrl}
           onChange={(e) => setVideoUrl(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSetVideo()}

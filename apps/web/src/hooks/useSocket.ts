@@ -142,6 +142,8 @@ export function useSocket() {
               messages: data.messages || [],
               videoUrl: data.videoUrl,
               createdAt: data.createdAt,
+              playlist: data.playlist,
+              currentVideoIndex: data.currentVideoIndex,
             });
             messageListeners = messageListeners.filter(
               (listener) => listener !== handleMessage
@@ -171,6 +173,8 @@ export function useSocket() {
               messages: data.messages || [],
               videoUrl: data.videoUrl,
               createdAt: data.createdAt,
+              playlist: data.playlist,
+              currentVideoIndex: data.currentVideoIndex,
             });
             messageListeners = messageListeners.filter(
               (listener) => listener !== handleMessage
@@ -308,6 +312,68 @@ export function useSocket() {
     []
   );
 
+  const addToPlaylist = useCallback((roomId: string, videoUrl: string) => {
+    const socket = globalSocket;
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      const message = JSON.stringify({
+        type: 'add-to-playlist',
+        roomId,
+        videoUrl,
+      });
+      socket.send(message);
+    }
+  }, []);
+
+  const subscribeToPlaylistUpdates = useCallback(
+    (
+      callback: (data: {
+        playlist: string[];
+        currentVideoIndex: number;
+      }) => void
+    ) => {
+      const handleMessage = (event: MessageEvent) => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'playlist-update') {
+          callback({
+            playlist: data.playlist,
+            currentVideoIndex: data.currentVideoIndex,
+          });
+        }
+      };
+
+      messageListeners.push(handleMessage);
+
+      return () => {
+        messageListeners = messageListeners.filter(
+          (listener) => listener !== handleMessage
+        );
+      };
+    },
+    []
+  );
+
+  const nextVideo = useCallback((roomId: string) => {
+    const socket = globalSocket;
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      const message = JSON.stringify({
+        type: 'next-video',
+        roomId,
+      });
+      socket.send(message);
+    }
+  }, []);
+
+  const videoEnded = useCallback((roomId: string) => {
+    const socket = globalSocket;
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      const message = JSON.stringify({
+        type: 'video-ended',
+        roomId,
+      });
+      socket.send(message);
+    }
+  }, []);
+
   return {
     isConnected,
     createRoom,
@@ -319,5 +385,9 @@ export function useSocket() {
     syncVideoState,
     subscribeToVideoUpdates,
     subscribeToVideoSync,
+    addToPlaylist,
+    subscribeToPlaylistUpdates,
+    nextVideo,
+    videoEnded,
   };
 }

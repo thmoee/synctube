@@ -5,6 +5,8 @@ interface Room {
   messages: Message[];
   videoUrl?: string;
   createdAt: string;
+  playlist: string[];
+  currentVideoIndex: number;
 }
 
 interface Message {
@@ -18,7 +20,10 @@ type SocketTypes =
   | 'join-room'
   | 'send-message'
   | 'set-video'
-  | 'video-sync';
+  | 'video-sync'
+  | 'add-to-playlist'
+  | 'next-video'
+  | 'video-ended';
 
 interface WebSocketData {
   type: SocketTypes;
@@ -53,6 +58,8 @@ wss.on('connection', (ws: WebSocket) => {
           clients: new Set([ws]),
           messages: [],
           createdAt: new Date().toISOString(),
+          playlist: [],
+          currentVideoIndex: -1,
         });
         ws.send(JSON.stringify({ type: 'room-created', roomId }));
         console.log('Room created:', roomId);
@@ -68,6 +75,8 @@ wss.on('connection', (ws: WebSocket) => {
               messages: room.messages,
               videoUrl: room.videoUrl,
               createdAt: room.createdAt,
+              playlist: room.playlist,
+              currentVideoIndex: room.currentVideoIndex,
             })
           );
           broadcast(room.clients, {
@@ -120,6 +129,77 @@ wss.on('connection', (ws: WebSocket) => {
               );
             }
           });
+        }
+        break;
+
+      case 'add-to-playlist':
+        const playlistRoom = rooms.get(data.roomId!);
+        if (playlistRoom) {
+          // If there's no video playing currently, set it as the current video
+          if (!playlistRoom.videoUrl) {
+            playlistRoom.videoUrl = data.videoUrl;
+            // Don't add to playlist, just set as current video
+            broadcast(playlistRoom.clients, {
+              type: 'video-update',
+              videoUrl: data.videoUrl,
+              currentVideoIndex: -1, // -1 indicates no playlist video is playing
+            });
+          } else {
+            // If there's already a video playing, add to playlist
+            playlistRoom.playlist.push(data.videoUrl!);
+            broadcast(playlistRoom.clients, {
+              type: 'playlist-update',
+              playlist: playlistRoom.playlist,
+              currentVideoIndex: playlistRoom.currentVideoIndex,
+            });
+          }
+        }
+        break;
+
+      case 'next-video':
+        const nextVideoRoom = rooms.get(data.roomId!);
+        if (
+          nextVideoRoom &&
+          nextVideoRoom.playlist.length > nextVideoRoom.currentVideoIndex + 1
+        ) {
+          nextVideoRoom.currentVideoIndex++;
+          nextVideoRoom.videoUrl =
+            nextVideoRoom.playlist[nextVideoRoom.currentVideoIndex];
+          broadcast(nextVideoRoom.clients, {
+            type: 'video-update',
+            videoUrl: nextVideoRoom.videoUrl,
+            currentVideoIndex: nextVideoRoom.currentVideoIndex,
+          });
+        }
+        break;
+
+      case 'video-ended':
+        const endedVideoRoom = rooms.get(data.roomId!);
+        if (endedVideoRoom) {
+          if (endedVideoRoom.playlist.length === 0) {
+            endedVideoRoom.videoUrl = undefined;
+            broadcast(endedVideoRoom.clients, {
+              type: 'video-update',
+              videoUrl: undefined,
+              currentVideoIndex: -1,
+            });
+          } else {
+            endedVideoRoom.videoUrl = endedVideoRoom.playlist[0];
+            endedVideoRoom.playlist.shift();
+            endedVideoRoom.currentVideoIndex = -1;
+
+            broadcast(endedVideoRoom.clients, {
+              type: 'video-update',
+              videoUrl: endedVideoRoom.videoUrl,
+              currentVideoIndex: -1,
+            });
+
+            broadcast(endedVideoRoom.clients, {
+              type: 'playlist-update',
+              playlist: endedVideoRoom.playlist,
+              currentVideoIndex: -1,
+            });
+          }
         }
         break;
 
