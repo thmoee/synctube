@@ -8,6 +8,7 @@ import RoomHeader from '@/components/room/header';
 import RoomChat from '@/components/room/chat';
 import { RoomData, VideoMetadata } from '@/types/room';
 import { formatDistanceToNow } from 'date-fns';
+import { useRouter } from 'next/navigation';
 interface YouTubePlayer {
   playVideo: () => void;
   pauseVideo: () => void;
@@ -15,11 +16,6 @@ interface YouTubePlayer {
   getCurrentTime: () => number;
   getPlayerState: () => number;
 }
-
-type VideoEvent =
-  | { type: 'video-play'; timestamp: number }
-  | { type: 'video-pause'; timestamp: number }
-  | { type: 'video-seek'; timestamp: number };
 
 declare global {
   interface Window {
@@ -29,7 +25,8 @@ declare global {
   }
 }
 
-export default function RoomPage() {
+export default function ClientPage() {
+  const router = useRouter();
   const params = useParams();
   const roomId = params.roomId as string;
   const {
@@ -42,14 +39,12 @@ export default function RoomPage() {
     syncVideoState,
     addToPlaylist,
     subscribeToPlaylistUpdates,
-    nextVideo,
     videoEnded,
   } = useSocket();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [participants, setParticipants] = useState(0);
   const [videoUrl, setVideoUrl] = useState('');
-  const [username] = useState(`User-${Math.floor(Math.random() * 1000)}`);
   const [videoMetadata, setVideoMetadata] = useState<VideoMetadata>({
     title: '',
     creator: '',
@@ -86,7 +81,6 @@ export default function RoomPage() {
         });
       } else if (playerState === 0) {
         videoEnded(roomId);
-        // nextVideo(roomId);
       }
     },
     [roomId, syncVideoState, videoEnded]
@@ -107,11 +101,12 @@ export default function RoomPage() {
         }
       } catch (error) {
         console.error('Error joining room:', error);
+        router.push('/room-not-found');
       }
     };
 
     fetchRoomData();
-  }, [isConnected, joinRoom, roomId]);
+  }, [isConnected, joinRoom, roomId, router]);
 
   useEffect(() => {
     if (!isConnected) return;
