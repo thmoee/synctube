@@ -4,6 +4,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { Message } from '@/types/message';
 import ChatInput from './chat-input';
 import { generateUsername } from '@/constants/username-generator';
+import { Username } from './username';
 
 interface RoomChatProps {
   messages: Message[];
@@ -30,7 +31,7 @@ export default function RoomChat({ messages, roomId }: RoomChatProps) {
               <div key={message.id} className="flex gap-3">
                 <div className="grid gap-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm">{message.user}</span>
+                    <Username username={message.user} />
                     <span className="text-xs text-gray-500">
                       {message.time}
                     </span>
@@ -56,7 +57,7 @@ export default function RoomChat({ messages, roomId }: RoomChatProps) {
               <div key={message.id} className="flex gap-3">
                 <div className="grid gap-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm">{message.user}</span>
+                    <Username username={message.user} />
                     <span className="text-xs text-gray-500">
                       {message.time}
                     </span>
