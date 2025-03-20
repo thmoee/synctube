@@ -5,6 +5,7 @@ import { Message } from '@/types/message';
 import ChatInput from './chat-input';
 import { generateUsername } from '@/constants/username-generator';
 import { Username } from './username';
+import { Timestamp } from './timestamp';
 
 interface RoomChatProps {
   messages: Message[];
@@ -32,9 +33,7 @@ export default function RoomChat({ messages, roomId }: RoomChatProps) {
                 <div className="grid gap-1">
                   <div className="flex items-center gap-2">
                     <Username username={message.user} />
-                    <span className="text-xs text-gray-500">
-                      {message.time}
-                    </span>
+                    <Timestamp timestamp={message.time} />
                   </div>
                   <p className="text-sm">{message.content}</p>
                 </div>
@@ -58,9 +57,7 @@ export default function RoomChat({ messages, roomId }: RoomChatProps) {
                 <div className="grid gap-1">
                   <div className="flex items-center gap-2">
                     <Username username={message.user} />
-                    <span className="text-xs text-gray-500">
-                      {message.time}
-                    </span>
+                    <Timestamp timestamp={message.time} />
                   </div>
                   <p className="text-sm">{message.content}</p>
                 </div>
