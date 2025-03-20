@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { ScrollArea } from '../ui/scroll-area';
 import { Message } from '@/types/message';
 import ChatInput from './chat-input';
+import { generateUsername } from '@/constants/username-generator';
 
 interface RoomChatProps {
   messages: Message[];
@@ -11,8 +12,7 @@ interface RoomChatProps {
 
 export default function RoomChat({ messages, roomId }: RoomChatProps) {
   const { sendMessage } = useSocket();
-  const [inputValue, setInputValue] = useState('');
-  const [username] = useState(`User-${Math.floor(Math.random() * 1000)}`);
+  const [username] = useState(generateUsername());
 
   const handleSendMessage = (message: string) => {
     sendMessage(roomId, username, message);
