@@ -16,6 +16,7 @@ interface Message {
   time: string;
 }
 type SocketTypes =
+  | 'check-room'
   | 'create-room'
   | 'join-room'
   | 'send-message'
@@ -52,6 +53,10 @@ wss.on('connection', (ws: WebSocket) => {
     const data: WebSocketData = JSON.parse(message);
 
     switch (data.type) {
+      case 'check-room':
+        const exists = rooms.has(data.roomId!);
+        ws.send(JSON.stringify({ type: 'room-check-result', exists }));
+        break;
       case 'create-room':
         const roomId = generateRoomId();
         rooms.set(roomId, {
