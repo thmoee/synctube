@@ -3,6 +3,9 @@ import React, { useState } from 'react';
 import { ScrollArea } from '../ui/scroll-area';
 import { Message } from '@/types/message';
 import ChatInput from './chat-input';
+import { generateUsername } from '@/constants/username-generator';
+import { Username } from './username';
+import { Timestamp } from './timestamp';
 
 interface RoomChatProps {
   messages: Message[];
@@ -11,8 +14,7 @@ interface RoomChatProps {
 
 export default function RoomChat({ messages, roomId }: RoomChatProps) {
   const { sendMessage } = useSocket();
-  const [inputValue, setInputValue] = useState('');
-  const [username] = useState(`User-${Math.floor(Math.random() * 1000)}`);
+  const [username] = useState(generateUsername());
 
   const handleSendMessage = (message: string) => {
     sendMessage(roomId, username, message);
@@ -30,10 +32,8 @@ export default function RoomChat({ messages, roomId }: RoomChatProps) {
               <div key={message.id} className="flex gap-3">
                 <div className="grid gap-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm">{message.user}</span>
-                    <span className="text-xs text-gray-500">
-                      {message.time}
-                    </span>
+                    <Username username={message.user} />
+                    <Timestamp timestamp={message.time} />
                   </div>
                   <p className="text-sm">{message.content}</p>
                 </div>
@@ -56,10 +56,8 @@ export default function RoomChat({ messages, roomId }: RoomChatProps) {
               <div key={message.id} className="flex gap-3">
                 <div className="grid gap-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm">{message.user}</span>
-                    <span className="text-xs text-gray-500">
-                      {message.time}
-                    </span>
+                    <Username username={message.user} />
+                    <Timestamp timestamp={message.time} />
                   </div>
                   <p className="text-sm">{message.content}</p>
                 </div>
