@@ -1,9 +1,6 @@
 import { useSocket } from '@/hooks/useSocket';
 import React, { useRef, useState } from 'react';
 import { ScrollArea } from '../ui/scroll-area';
-import { Input } from '../ui/input';
-import { Button } from '../ui/button';
-import { Send } from 'lucide-react';
 import { Message } from '@/types/message';
 import ChatInput from './chat-input';
 
@@ -19,13 +16,8 @@ export default function RoomChat({ messages, roomId }: RoomChatProps) {
   const [username] = useState(`User-${Math.floor(Math.random() * 1000)}`);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // e: React.FormEvent<HTMLFormElement>
-  const handleSendMessage = (e: string) => {
-    sendMessage(roomId, username, e);
-    // if (inputValue.trim()) {
-    //   sendMessage(roomId, username, e);
-    //   setInputValue('');
-    // }
+  const handleSendMessage = (message: string) => {
+    sendMessage(roomId, username, message);
   };
 
   return (
@@ -53,22 +45,7 @@ export default function RoomChat({ messages, roomId }: RoomChatProps) {
         </ScrollArea>
         <div className="p-3 border-t shrink-0">
           <ChatInput onSend={handleSendMessage} />
-          {/* <form onSubmit={handleSendMessage} className="flex gap-2">
-            <div>
-              <Input
-                placeholder="Type a message..."
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                className="flex-1"
-              />
-            </div>
-            <Button type="submit" size="icon">
-              <Send className="h-4 w-4" />
-              <span className="sr-only">Send</span>
-            </Button>
-          </form> */}
         </div>
-        <div ref={messagesEndRef} />
       </div>
       {/* Mobile chat view */}
       <div className="lg:hidden flex flex-col border-t">
@@ -94,18 +71,6 @@ export default function RoomChat({ messages, roomId }: RoomChatProps) {
         </ScrollArea>
         <div className="p-3 border-t shrink-0">
           <ChatInput onSend={handleSendMessage} />
-          {/* <form onSubmit={handleSendMessage} className="flex gap-2">
-            <Input
-              placeholder="Type a message..."
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              className="flex-1"
-            />
-            <Button type="submit" size="icon">
-              <Send className="h-4 w-4" />
-              <span className="sr-only">Send</span>
-            </Button>
-          </form> */}
         </div>
       </div>
     </React.Fragment>

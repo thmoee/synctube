@@ -4,7 +4,9 @@ import { Send, Smile } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { useRef, useState } from 'react';
-import EmojiPicker, { SkinTones, Theme } from 'emoji-picker-react';
+import data from '@emoji-mart/data';
+import Picker from '@emoji-mart/react';
+import { EmojiResponse } from '@/types/emoji';
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -15,9 +17,8 @@ export default function ChatInput({ onSend }: ChatInputProps) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleEmojiClick = (emojiObject: any) => {
-    const emoji = emojiObject.emoji;
+  const handleEmojiSelect = (emojiObject: EmojiResponse) => {
+    const emoji = emojiObject.native;
     const input = inputRef.current;
 
     if (input) {
@@ -74,12 +75,12 @@ export default function ChatInput({ onSend }: ChatInputProps) {
 
           {showEmojiPicker && (
             <div className="absolute bottom-full right-0 mb-2">
-              <EmojiPicker
-                onEmojiClick={handleEmojiClick}
-                theme={Theme.AUTO}
-                defaultSkinTone={SkinTones.NEUTRAL}
-                skinTonesDisabled={true}
-                lazyLoadEmojis={true}
+              <Picker
+                data={data}
+                onEmojiSelect={handleEmojiSelect}
+                skinTonePosition="none"
+                previewPosition="none"
+                onClickOutside={() => setShowEmojiPicker(false)}
               />
             </div>
           )}
