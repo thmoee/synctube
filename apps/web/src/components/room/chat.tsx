@@ -1,5 +1,5 @@
 import { useSocket } from '@/hooks/useSocket';
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { ScrollArea } from '../ui/scroll-area';
 import { Message } from '@/types/message';
 import ChatInput from './chat-input';
@@ -11,10 +11,8 @@ interface RoomChatProps {
 
 export default function RoomChat({ messages, roomId }: RoomChatProps) {
   const { sendMessage } = useSocket();
-
   const [inputValue, setInputValue] = useState('');
   const [username] = useState(`User-${Math.floor(Math.random() * 1000)}`);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const handleSendMessage = (message: string) => {
     sendMessage(roomId, username, message);
